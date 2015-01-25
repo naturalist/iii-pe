@@ -1,6 +1,7 @@
 PID_FILE=.iiipe.pid
 STATUS_FILE=.iiipe.stat
 PORT=8082
+APP=app.psgi
 
 help:
 	@echo "start    start in development"
@@ -10,10 +11,10 @@ help:
 	@echo "debug    start in debugger"
 
 start:
-	carton exec plackup -r -a app.psgi
+	carton exec plackup -r -a $(APP)
 
 deploy:
-	start_server --port=$(PORT) --pid-file=$(PID_FILE) --status-file=$(STATUS_FILE) -- plackup -s Starman -E deployment app.psgi
+	start_server --port=$(PORT) --pid-file=$(PID_FILE) --status-file=$(STATUS_FILE) -- carton exec plackup -s Starman -E deployment $(APP)
 
 restart:
 	start_server --restart --pid-file=$(PID_FILE) --status-file=$(STATUS_FILE)
@@ -22,4 +23,4 @@ test:
 	carton exec prove -lv
 
 debug:
-	carton exec perl -d $(which plackup) app.psgi
+	carton exec perl -d $(which plackup) $(APP)
