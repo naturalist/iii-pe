@@ -18,11 +18,8 @@ start:
 	carton exec plackup -r -a $(APP)
 
 deploy:
-	start_server --port=$(PORT) \
-	             --pid-file=$(PID_FILE) \ 
-				 --status-file=$(STATUS_FILE) \ 
-				 -- \
-				 carton exec plackup -s Starman --workers 1 -E deployment $(APP)
+	start_server --port=$(PORT) --pid-file=$(PID_FILE) --status-file=$(STATUS_FILE) -- \
+	      carton exec plackup -s Starman --workers 1 -E deployment $(APP)
 
 restart:
 	start_server --restart --pid-file=$(PID_FILE) --status-file=$(STATUS_FILE)
