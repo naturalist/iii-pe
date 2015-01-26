@@ -4,11 +4,15 @@ PORT=8082
 APP=app.psgi
 
 help:
-	@echo "start    start in development"
-	@echo "deploy   start in deployment"
-	@echo "test     run all tests"
-	@echo "restart  restart deployed app"
-	@echo "debug    start in debugger"
+	@echo "install           install all dependencies"
+	@echo "start             start the application in development mode"
+	@echo "deploy            start the application in in deployment mode"
+	@echo "test              run all tests"
+	@echo "restart           restart the deployed app"
+	@echo "debug             start in the perl debugger"
+
+install:
+	carton
 
 start:
 	carton exec plackup -r -a $(APP)

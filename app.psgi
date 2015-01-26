@@ -1,49 +1,84 @@
+use strict;
+use warnings;
+
 use Kelp::Less;
 use Redis;
 use Encode::Base58;
 use Regexp::Common qw/URI/;
-use URI;
+use URI::Heuristic qw(uf_uristr);
+use Validate::Tiny ':all';
+use Try::Tiny;
 
 module 'JSON';
 
-# Key for the counter
-my $COUNT = '.count';
+#===============================================================
+# Constants
+# ==============================================================
+#
+my $URI_RE = qr|$RE{URI}{HTTP}{-scheme=>qr/https?/}|;    # URI regex
+my $COUNT  = '.count';                                   # Key for the counter
+my $TTL     = 86400;         # Default expiration in seconds
+my $MAX_TTL = 86400 * 30;    # Do not keep links older than
 
-# URI regex
-my $URI_RE = qr|$RE{URI}{HTTP}{-scheme=>qr/https?/}|;
+#===============================================================
+# Variables
+#===============================================================
+#
+my $redis = Redis->new( %{ config('redis') } );
 
-# Default expiration in seconds
-my $EXPIRE = 86400;
-
-# Do not keep links older than
-my $MAX_EXPIRE = 86400 * 30;
-
-
-my $redis  = Redis->new;
-
+#===============================================================
+# Routes
+#===============================================================
+#
 post '/' => sub {
-    my $uri = canonical( param('url') // '' )->as_string;
-    my $expire = param('expire') // $EXPIRE;
+    my $self = shift;
+    my $input = ();
 
-    if ( $uri !~ qr{^http:} ) {
-        $uri = 'http://' . $uri;
-    }
+    try {
+        $input =
+          req->is_json
+          ? $self->json->decode( req->content )
+          : req->parameters;
+    };
 
-    if ( $uri !~ $URI_RE ) {
+    my $result = validate(
+        $input,
+        {
+            fields  => [qw/url ttl/],
+            filters => [
+                qr/.+/ => filter(qw/trim/),
+                url    => filter_url()
+            ],
+            checks => [
+                url => [ is_required(), is_url() ],
+                ttl => is_ttl()
+            ]
+        }
+    );
+
+    if ( !$result->{success} ) {
         res->code(400);
-        return { error => "Bad or missing url param" };
+        return { error => $result->{error} };
     }
 
-    if ( $expire > $MAX_EXPIRE ) {
-        res->code(400);
-        return { error => "Expiration can not be more than $MAX_EXPIRE" };
-    }
+    my $url = $result->{data}->{url};
+    my $ttl = $result->{data}->{ttl} // $TTL;
 
     my $key = encode_base58( count() );
-    $redis->set( $key, $uri );
-    $redis->expire( $key, $expire );
+    $redis->set( $key, $url );
+    $redis->expire( $key, $ttl );
 
-    return { url => config('url') . "/$key" };
+    my $short_url = config('url') . "/$key";
+    if ( req->is_json ) {
+        return {
+            url     => $short_url,
+            ttl     => $ttl,
+            expires => time + $ttl
+        };
+    }
+    else {
+        return $short_url;
+    }
 };
 
 get '/:code' => {
@@ -59,15 +94,42 @@ get '/:code' => {
     }
 };
 
+#=================================================================
+# Application
+#=================================================================
+#
 run;
 
-sub canonical {
-    my $uri = URI->new(shift, 'http');
-    return $uri->canonical;
-}
-
+#=================================================================
+# Subs
+#=================================================================
+#
 sub count {
     my $count = $redis->get($COUNT) // 0;
     $redis->incr($COUNT);
     return $count;
+}
+
+sub filter_url {
+    return sub {
+        my $val = shift;
+        return uf_uristr($val);
+    };
+}
+
+sub is_url {
+    return sub {
+        my $val = shift // return;
+        return "Invalid url" unless $val =~ $URI_RE;
+        return;
+    };
+}
+
+sub is_ttl {
+    return sub {
+        my $val = shift // return;
+        return "Invalid ttl value" unless $val =~ /^\d+$/;
+        return "Can not be more than $MAX_TTL" if $val > $MAX_TTL;
+        return;
+    };
 }
