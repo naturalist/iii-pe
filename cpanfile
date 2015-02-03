@@ -5,3 +5,4 @@ requires 'Regexp::Common';
 requires 'URI::Heuristic';
 requires 'Validate::Tiny';
 requires 'Try::Tiny';
+requires 'Plack::Middleware::Static';

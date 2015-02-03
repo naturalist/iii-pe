@@ -10,6 +10,7 @@ use Validate::Tiny ':all';
 use Try::Tiny;
 
 module 'JSON';
+module 'Template';
 
 #===============================================================
 # Constants
@@ -30,6 +31,11 @@ my $redis = Redis->new( %{ config('redis') } );
 # Routes
 #===============================================================
 #
+
+get '/' => sub {
+    template 'index';
+};
+
 post '/' => sub {
     my $self = shift;
     my $input = ();

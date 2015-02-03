@@ -1,0 +1,136 @@
+<!doctype html>
+<html>
+  <head>
+    <title>URL shortener</title>
+    <style type="text/css">
+      #container {
+        width: 900px;
+        margin: auto;
+      }
+
+      #url {
+        width: 600px;
+        border: 2px solid #97c4fe;
+        font-family: Sans, Lucida Grande, Verdana;
+        font-size: 18px;
+        color: #555;
+        font-weight: bold;
+        padding: 7px 3px 7px 3px;
+      }
+
+      #go {
+        -moz-box-shadow:inset 0px 1px 0px 0px #97c4fe;
+        -webkit-box-shadow:inset 0px 1px 0px 0px #97c4fe;
+        box-shadow:inset 0px 1px 0px 0px #97c4fe;
+        background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #3d94f6), color-stop(1, #1e62d0) );
+        background:-moz-linear-gradient( center top, #3d94f6 5%, #1e62d0 100% );
+        filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#3d94f6', endColorstr='#1e62d0');
+        background-color:#3d94f6;
+        -webkit-border-top-left-radius:0px;
+        -moz-border-radius-topleft:0px;
+        border-top-left-radius:0px;
+        -webkit-border-top-right-radius:0px;
+        -moz-border-radius-topright:0px;
+        border-top-right-radius:0px;
+        -webkit-border-bottom-right-radius:0px;
+        -moz-border-radius-bottomright:0px;
+        border-bottom-right-radius:0px;
+        -webkit-border-bottom-left-radius:0px;
+        -moz-border-radius-bottomleft:0px;
+        border-bottom-left-radius:0px;
+        text-indent:0;
+        border:1px solid #337fed;
+        display:inline-block;
+        color:#ffffff;
+        font-family:Arial;
+        font-size:15px;
+        font-weight:bold;
+        font-style:normal;
+        height:40px;
+        line-height:40px;
+        width:100px;
+        text-decoration:none;
+        text-align:center;
+        text-shadow:1px 1px 0px #1570cd;
+        cursor: pointer;
+      }
+      #go:hover {
+        background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #1e62d0), color-stop(1, #3d94f6) );
+        background:-moz-linear-gradient( center top, #1e62d0 5%, #3d94f6 100% );
+        filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#1e62d0', endColorstr='#3d94f6');
+        background-color:#1e62d0;
+      }
+      #go:active {
+        position:relative;
+        top:1px;
+      }
+      #error {
+        display: none;
+        margin-top: 10px;
+      }
+    </style>
+    <script type="text/javascript">
+      var b, e, u, t;
+      function showResult(json) {
+        e.innerHTML = '';
+        e.style.display = 'none';
+        u.value = json.url;
+      }
+      function showError(msg) {
+        e.style.display = 'block';
+        e.innerHTML = msg;
+      }
+      window.onload = function() {
+        b = document.getElementById('go');
+        e = document.getElementById('error');
+        u = document.getElementById('url');
+        t = document.getElementById('ttl');
+
+        b.onclick = function() {
+          var url = u.value,
+              ttl = t.value;
+
+          if ( typeof url !== "undefined" ) {
+            var xmlhttp = new XMLHttpRequest();
+            xmlhttp.open('POST', '/', true);
+            xmlhttp.onreadystatechange = function() {
+              if (xmlhttp.readyState == 4) {
+                if ( xmlhttp.status === 200 ) {
+                    var json;
+                    try {
+                      json = JSON.parse(xmlhttp.responseText)
+                    } catch (ex) {
+                      showError('Error');
+                    }
+                    if ( typeof json !== "undefined") {
+                      showResult(json);
+                    }
+                } else {
+                  showError('Error');
+                }
+              }
+            }
+            xmlhttp.setRequestHeader('Content-Type', 'application/json');
+            xmlhttp.send(JSON.stringify({url:url,ttl:ttl}));
+          }
+
+          return false
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="container">
+      <div>
+        <input id="url" placeholder="http://">
+        <a id="go">shorten</a>
+        <select id="ttl">
+          <option value="86400">1 day</option>
+          <option value="604800">1 week</option>
+          <option value="2592000">1 month</option>
+        </select>
+      </div>
+      <div id="error"></div>
+    </div>
+  </body>
+</html>
