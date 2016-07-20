@@ -1,6 +1,6 @@
 PID_FILE=.iiipe.pid
 STATUS_FILE=.iiipe.stat
-PORT=8082
+PORT=108.61.11.203:8082
 APP=app.psgi
 WORKERS=1
 
